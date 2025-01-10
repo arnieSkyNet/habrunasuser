@@ -1,0 +1,80 @@
+#!/bin/bash
+export PATH=/usr/local/bin:/usr/bin:/bin:$HOME/sbin
+
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval $(ssh-agent)
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
+  # Script is running as root
+  echo "chk root: Running as $(whoami)"
+  if [ $# -eq 0 ]; then
+    echo "No parameters passed to launchprog."
+    exit 1
+  fi
+
+  export DISPLAY=:0
+  # Build the environment variable to be passed to the 'pi' user
+  habridgessh="$0 $@"
+
+  # Remove /home/pi/sbin/launchprog from habridgessh
+  habridgessh="${habridgessh//\/home\/pi\/sbin\/launchprog/}"
+
+  echo "Running as root. Setting habridgessh for user pi: $habridgessh"
+  # debug version leaves terminal open
+  # lxterminal --display=:0 -e "sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c 'exec bash --rcfile <(echo \"source ~/.bashrc; /home/pi/sbin/launchprog; echo Program exited with status \$?; bash\")'"
+: <<'EOF'
+  # debug version stays open
+lxterminal --display=:0 -e "
+    sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c '
+        exec bash --rcfile <(
+            echo \"
+                source ~/.bashrc
+                /home/pi/sbin/launchprog
+            \"
+        )
+    '
+"
+EOF
+
+#: <<'EOF'
+lxterminal --display=:0 -e "
+    sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c '
+        source ~/.bashrc
+        /home/pi/sbin/launchprog
+    '
+"
+#EOF
+  exit 0
+else
+  # Script is running as pi
+  if [ -z "$habridgessh" ]; then
+    # If the environment variable is not set, assign a default value
+    habridgessh="rootsentnothing"
+    exit 0
+  fi
+
+  echo "Running as user pi. Value of habridgessh: $habridgessh"
+  command2do="$habridgessh"
+  echo "DEBUG: habridgessh is [$habridgessh]"
+  echo "DEBUG: command2do is [$command2do]"
+
+
+# Check if SSH agent is running
+if ! ssh-add -l > /dev/null 2>&1; then
+    echo "No SSH agent found or no keys loaded."
+    echo "Ensure that your SSH key is added using 'ssh-add'."
+    exit 1
+fi
+
+# Debug: List loaded keys
+echo "Loaded SSH keys:"
+ssh-add -l
+
+
+  unset habridgessh
+  # read -p "Running as $(whoami) Press Enter to execute $command2do"
+  bash -c "exec $command2do"
+fi
+
+exit
