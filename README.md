@@ -30,4 +30,5 @@ lxterminal --display=:0 -e "sudo -u pi env HOME=/home/pi bash -c '/path/to/your/
 sudo ./launchprog
 or the reason for the script, from habridge devices on/dim/off section
 
+habrige device Turn On "Pan reset" 
 /home/pi/sbin/launchprog /usr/bin/ssh -tt mark@flo projects/webcam/webcamctl -r
