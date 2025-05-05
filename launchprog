@@ -1,6 +1,12 @@
 #!/bin/bash
 export PATH=/usr/local/bin:/usr/bin:/bin:$HOME/sbin
-# ver 0.02 with -d debug option
+# ver 0.04 with -d debug option
+
+# Ensure this in .bashrc to allow this program to work
+## Allow root access to X display
+## if [ -n "$DISPLAY" ]; then
+##     xhost +SI:localuser:root > /dev/null 2>&1
+## fi
 
 if [ -z "$SSH_AUTH_SOCK" ]; then
     eval $(ssh-agent)

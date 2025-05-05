@@ -1,0 +1,6 @@
+# Ensure this in your user pi ~/.bashrc file to allow this program to work
+# removing the ## 
+## Allow root access to X display
+## if [ -n "$DISPLAY" ]; then
+##     xhost +SI:localuser:root > /dev/null 2>&1
+## fi

@@ -20,13 +20,23 @@ git clone https://github.com/yourusername/habrunasuser.git
 
 # 2. Place your desired script (e.g., launchprog) in the repository's main directory.
 
-# 3. Edit launchprog to specify the program to execute:
+# 3. Add this to your .bashrc or somewhere else you prefer
+# Allow root access to X display
+# xhost +SI:localuser:root
+# the above line is essential to make all work
+# 
+# Allow root access to X display
+## if [ -n "$DISPLAY" ]; then
+##     xhost +SI:localuser:root > /dev/null 2>&1
+## fi
+
+# 4. Edit launchprog to specify the program to execute:
 # Example launchprog content:
 #!/bin/bash
 # Example: Launches a custom program as user "pi"
 lxterminal --display=:0 -e "sudo -u pi env HOME=/home/pi bash -c '/path/to/your/program'"
 
-# 4. Run the script with root privileges:
+# 5. Run the script with root privileges:
 sudo ./launchprog
 or the reason for the script, from habridge devices on/dim/off section
 
