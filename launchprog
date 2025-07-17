@@ -1,94 +1,69 @@
 #!/bin/bash
-export PATH=/usr/local/bin:/usr/bin:/bin:$HOME/sbin
-# ver 0.04 with -d debug option
+#LOGFILE="/home/pi/log/launchprog.log"
+LOGFILE="/home/pi/log/arnie.log"
+SCRIPT_NAME=$(basename "$0")
+VER=0.04
+# Prevent recursive invocation as early as possible
+if [[ "$LAUNCHPROG_ACTIVE" == "1" ]]; then
+    echo "[$(date +%T)  $SCRIPT_NAME v$VER] $(id -un) Re-entry blocked"  >> "$LOGFILE"
+    exit 0
+fi
+# Set the active flag to block further invocations
+export LAUNCHPROG_ACTIVE=1
 
-# Ensure this in .bashrc to allow this program to work
-## Allow root access to X display
-## if [ -n "$DISPLAY" ]; then
-##     xhost +SI:localuser:root > /dev/null 2>&1
-## fi
+# Debugging: Track entry and user ID
+echo "==============================================" >> "$LOGFILE"
+echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Entering script LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
 
-if [ -z "$SSH_AUTH_SOCK" ]; then
+# Existing PATH settings
+#export PATH=/usr/local/bin:/usr/bin:/bin:/home/pi/sbin
+
+# Ensure SSH_AUTH_SOCK is available, start agent if needed
+if [ -z "$SSH_AUTH_SOCK" ] && [ "$(id -u)" -ne 0 ]; then
     eval $(ssh-agent)
+    echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Ensured SSH_AUTH_SOCK is available, start agent if needed LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
 fi
 
 if [ "$(id -u)" -eq 0 ]; then
-  # Script is running as root
-  echo "chk root: Running as $(whoami)"
-  if [ $# -eq 0 ]; then
-    echo "No parameters passed to launchprog."
-    exit 1
-  fi
-
-  export DISPLAY=:0
-
-  # Check if the first argument is -d
-  DEBUG_MODE=false
-  if [[ "$1" == "-d" ]]; then
-    DEBUG_MODE=true
-    shift  # Remove -d from the arguments list
-  fi
-
-  # Build the environment variable to be passed to the 'pi' user
-  habridgessh="$0 $@"
-
-  # Remove /home/pi/sbin/launchprog from habridgessh
-  habridgessh="${habridgessh//\/home\/pi\/sbin\/launchprog/}"
-
-  echo "Running as root. Setting habridgessh for user pi: $habridgessh"
-  
-  if $DEBUG_MODE; then
-    echo "Debug mode enabled."
-    # Debug version leaves terminal open
-    lxterminal --display=:0 -e "
-        sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c '
-            exec bash --rcfile <(
-                echo \"
-                    source ~/.bashrc
-                    /home/pi/sbin/launchprog
-                \"
-            )
-        '
-    "
-  else
-    echo "Normal mode enabled."
-    # Normal mode
-    lxterminal --display=:0 -e "
-        sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c '
-            source ~/.bashrc
-            /home/pi/sbin/launchprog
-        '
-    "
-  fi
-
-  exit 0
-else
-  # Script is running as pi
-  if [ -z "$habridgessh" ]; then
-    # If the environment variable is not set, assign a default value
-    habridgessh="rootsentnothing"
+    echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) running as root LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
+    # Script is running as root
+    if [ $# -eq 0 ]; then
+          echo "[$(date +%T) $SCRIPT_NAME v$VER] root:$(id -un): No parameters passed to launchprog. exiting" >> "$LOGFILE"
+          exit 1
+    fi
+    export DISPLAY=:0
+    DEBUG_MODE=false
+    if [[ "$1" == "-d" ]]; then
+        DEBUG_MODE=true
+        shift  # Remove -d from the arguments list
+    fi
+    # Build the environment variable to be passed to the 'pi' user
+    habridgessh="$0 $@"
+    # Remove /home/pi/sbin/launchprog from habridgessh
+    habridgessh="${habridgessh//\/home\/pi\/sbin\/launchprog/}"
+    echo "[$(date +%T) $SCRIPT_NAME v$VER] root:$(id -un) Setting habridgessh for user pi: $habridgessh" >> "$LOGFILE"
+    if $DEBUG_MODE; then
+        echo "Debug mode enabled." >> "$LOGFILE"
+        lxterminal --display=:0 -e "sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -c '/home/pi/sbin/launchprog'"
+    else
+        # Normal execution
+        NO_AT_BRIDGE=1 xfce4-terminal --display=:0 -e "bash --norc -c 'sudo -u pi env HOME=/home/pi habridgessh=\"$habridgessh\" bash -i -c /home/pi/sbin/launchprog'"
+        ##NO_AT_BRIDGE=1 xfce4-terminal --display=:0 -e "bash --norc -c 'sudo -u pi env HOME=/home/pi LAUNCHPROG_ACTIVE= habridgessh=\"$habridgessh\" bash -i -c /home/pi/sbin/launchprog'"
+    fi
     exit 0
-  fi
-
-  echo "Running as user pi. Value of habridgessh: $habridgessh"
-  command2do="$habridgessh"
-  echo "DEBUG: habridgessh is [$habridgessh]"
-  echo "DEBUG: command2do is [$command2do]"
-
-  # Check if SSH agent is running
-  if ! ssh-add -l > /dev/null 2>&1; then
-      echo "No SSH agent found or no keys loaded."
-      echo "Ensure that your SSH key is added using 'ssh-add'."
-      exit 1
-  fi
-
-  # Debug: List loaded keys
-  echo "Loaded SSH keys:"
-  ssh-add -l
-
-  unset habridgessh
-  # read -p "Running as $(whoami) Press Enter to execute $command2do"
-  bash -c "exec $command2do"
+else
+    # Script is running as pi
+    if [ -z "$habridgessh" ]; then
+        habridgessh="rootsentnothing"
+        echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) pi: habridgessh empty Setting habridgessh rootsentnothing: $habridgessh and exiting" >> "$LOGFILE"
+        exit 0
+    fi
+    command2do="$habridgessh"
+    echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Executing final command: $command2do" >> "$LOGFILE"
+    unset habridgessh
+    bash -c "exec $command2do"
+    echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Exiting script" >> "$LOGFILE"
+    echo "----------------------------------------------" >> "$LOGFILE"
+    echo " " >> "$LOGFILE"
 fi
-
-exit
+exit 0
