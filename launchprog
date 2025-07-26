@@ -2,7 +2,7 @@
 #LOGFILE="/home/pi/log/launchprog.log"
 LOGFILE="/home/pi/log/arnie.log"
 SCRIPT_NAME=$(basename "$0")
-VER=0.04
+VER=0.05
 # Prevent recursive invocation as early as possible
 if [[ "$LAUNCHPROG_ACTIVE" == "1" ]]; then
     echo "[$(date +%T)  $SCRIPT_NAME v$VER] $(id -un) Re-entry blocked"  >> "$LOGFILE"
@@ -29,7 +29,7 @@ if [ "$(id -u)" -eq 0 ]; then
     # Script is running as root
     if [ $# -eq 0 ]; then
           echo "[$(date +%T) $SCRIPT_NAME v$VER] root:$(id -un): No parameters passed to launchprog. exiting" >> "$LOGFILE"
-          exit 1
+          exit 0
     fi
     export DISPLAY=:0
     DEBUG_MODE=false
