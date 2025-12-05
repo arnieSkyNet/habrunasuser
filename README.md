@@ -1,6 +1,8 @@
 # habrunasuser
 
-`habrunasuser` is a utility designed to securely launch a program as a specified user, even when initiated from root. habridge is running as root but root will not use any keys of the user, hence sudo in hadbridge will not work. It uses a two-stage process to pass the program name and execute it under the desired user's environment.
+`habrunasuser` is a utility designed to securely launch a program as a specified user, even when initiated from root. habridge is running as root
+ but root will not use any keys of the user, hence sudo in 
+[hadbridge](https://github.com/bwssytems/ha-bridge) will not work. It uses a two-stage process to pass the program name and execute it under the desired user's environment.
 
 ## Features
 - Run any program as a specific user.
