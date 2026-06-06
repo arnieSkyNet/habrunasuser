@@ -2,7 +2,7 @@
 #LOGFILE="/home/pi/log/launchprog.log"
 LOGFILE="/home/pi/log/arnie.log"
 SCRIPT_NAME=$(basename "$0")
-VER=0.05
+VER=0.06
 # Prevent recursive invocation as early as possible
 if [[ "$LAUNCHPROG_ACTIVE" == "1" ]]; then
     echo "[$(date +%T)  $SCRIPT_NAME v$VER] $(id -un) Re-entry blocked"  >> "$LOGFILE"
@@ -11,6 +11,7 @@ fi
 # Set the active flag to block further invocations
 export LAUNCHPROG_ACTIVE=1
 
+
 # Debugging: Track entry and user ID
 echo "==============================================" >> "$LOGFILE"
 echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Entering script LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
@@ -18,11 +19,12 @@ echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Entering script LAUNCHPROG_ACTI
 # Existing PATH settings
 #export PATH=/usr/local/bin:/usr/bin:/bin:/home/pi/sbin
 
-# Ensure SSH_AUTH_SOCK is available, start agent if needed
-if [ -z "$SSH_AUTH_SOCK" ] && [ "$(id -u)" -ne 0 ]; then
-    eval $(ssh-agent)
-    echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) Ensured SSH_AUTH_SOCK is available, start agent if needed LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
+# Ensure SSH agent is inherited from session (do NOT create new agents)
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    export SSH_AUTH_SOCK=$(find /tmp -type s -name "agent.*" 2>/dev/null | head -n 1)
 fi
+
+
 
 if [ "$(id -u)" -eq 0 ]; then
     echo "[$(date +%T) $SCRIPT_NAME v$VER] $(id -un) running as root LAUNCHPROG_ACTIVE=$LAUNCHPROG_ACTIVE" >> "$LOGFILE"
