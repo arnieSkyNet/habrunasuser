@@ -2,7 +2,7 @@
 #LOGFILE="/home/pi/log/launchprog.log"
 LOGFILE="/home/pi/log/arnie.log"
 SCRIPT_NAME=$(basename "$0")
-VER=0.06
+VER=0.06.01
 # Prevent recursive invocation as early as possible
 if [[ "$LAUNCHPROG_ACTIVE" == "1" ]]; then
     echo "[$(date +%T)  $SCRIPT_NAME v$VER] $(id -un) Re-entry blocked"  >> "$LOGFILE"
