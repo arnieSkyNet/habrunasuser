@@ -1,46 +1,35 @@
 # habrunasuser
 
 `habrunasuser` is a utility designed to securely launch a program as a specified user, even when initiated from root. habridge is running as root
- but root will not use any keys of the user, hence sudo in 
-[hadbridge](https://github.com/bwssytems/ha-bridge) will not work. It uses a two-stage process to pass the program name and execute it under the desired user's environment.
+but root will not use any keys of the user, hence sudo in
+[ha-bridge](https://github.com/bwssytems/ha-bridge) will not work. It uses a two-stage process to pass the program name and execute it under the desired user's environment.
 
 ## Features
 - Run any program as a specific user.
-- Uses specific users ssh keys.
+- Uses the target user's SSH keys and SSH agent session.
 - Preserves the user's environment (e.g., `.bashrc`).
+- Supports SSH-based automation using the target user's authenticated session.
 - Securely bridges execution from root to the target user.
 
 ## How It Works
-1. A script (e.g., `launchprog`) is run with root privileges.
-2. The program name is passed through the system.
+1. A script (e.g., `launchprog`) is run with root privileges (typically via HA Bridge).
+2. The program name and arguments are passed through the system.
 3. The utility ensures the program runs as the specified user with the correct environment.
+4. SSH commands rely on an existing user session SSH agent (not a newly created root agent).
 
-## Usage
+## SSH Agent Requirements (IMPORTANT)
+
+When used with HA Bridge, `habrunasuser` executes commands as the target user so that the user's SSH configuration and keys are used instead of root's environment.
+
+For SSH-based automation to work reliably, the target user's SSH agent must already be running and have the required keys loaded.
+
+During testing it was discovered that HA Bridge may start before the desktop session, keyring and SSH agent have fully initialised. In that situation, SSH commands executed through `habrunasuser` may prompt for the private key passphrase instead of using the existing authenticated SSH session.
+
+To avoid this problem, HA Bridge should only execute automation once the user's desktop session and SSH agent are available.
+
+A common solution is to delay HA Bridge startup until the desktop environment is ready, for example:
+
 ```bash
-# 1. Clone the repository:
-git clone https://github.com/yourusername/habrunasuser.git
+sleep 10
+sudo systemctl start ha-bridge
 
-# 2. Place your desired script (e.g., launchprog) in the repository's main directory.
-
-# 3. Add this to your .bashrc or somewhere else you prefer
-# Allow root access to X display
-# xhost +SI:localuser:root
-# the above line is essential to make all work
-# 
-# Allow root access to X display
-## if [ -n "$DISPLAY" ]; then
-##     xhost +SI:localuser:root > /dev/null 2>&1
-## fi
-
-# 4. Edit launchprog to specify the program to execute:
-# Example launchprog content:
-#!/bin/bash
-# Example: Launches a custom program as user "pi"
-lxterminal --display=:0 -e "sudo -u pi env HOME=/home/pi bash -c '/path/to/your/program'"
-
-# 5. Run the script with root privileges:
-sudo ./launchprog
-or the reason for the script, from habridge devices on/dim/off section
-
-habrige device Turn On "Pan reset" 
-/home/pi/sbin/launchprog /usr/bin/ssh -tt mark@flo projects/webcam/webcamctl -r
